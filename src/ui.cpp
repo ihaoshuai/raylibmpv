@@ -24,8 +24,6 @@ double DrawProgress(Rectangle rect, double percent)
 
         if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
         {
-            spdlog::debug("mouse x: {}, rect x: {}, rect width: {}", mousePos.x, rect.x, rect.width);
-            spdlog::debug("percent : {}", (mousePos.x-rect.x)/rect.width);
             return (mousePos.x-rect.x)/rect.width;
         }
     }
