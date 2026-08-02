@@ -2,9 +2,7 @@
 #include "ui.h"
 #include "video.h"
 #include "window.h"
-#include "mpv/render.h"
 #include "raylib.h"
-#include "mpv/client.h"
 #include "rlgl.h"
 #include <cmath>
 #include <fmt/format.h>

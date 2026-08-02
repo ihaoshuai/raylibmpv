@@ -9,6 +9,8 @@ Texture2D thumbTexture{0};
 
 bool DrawProgress(Rectangle rect, double percent, double* mousePercentage)
 {
+    if(!IsCursorOnScreen())
+        return false;
     Vector2 mousePos = GetMousePosition();
     if(CheckCollisionPointRec(mousePos, rect))
     {
