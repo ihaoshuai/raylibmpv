@@ -20,6 +20,7 @@ OsdMsg osdMsg;
 const uint64_t MPV_PROPERTY_PAUSE = 0;
 const uint64_t MPV_PROPERTY_PERCENTPOS = 1;
 const uint64_t MPV_PROPERTY_VOLUME = 2;
+const uint64_t MPV_PROPERTY_SPEED = 3;
 const double MSG_DURATION_TIME = 1.5;
 
 static void* get_proc_address(void *ctx, const char *name) {
@@ -66,7 +67,11 @@ void on_mpv_events(void *ctx)
                     osdMsg.msg = fmt::format("Volume: {}", vol);
                     osdMsg.lastShowTime = GetTime() + MSG_DURATION_TIME;
                 }
-            
+            }else if(event->reply_userdata == MPV_PROPERTY_SPEED) {
+                if(prop->format == MPV_FORMAT_DOUBLE)
+                {
+                    videoInfo.speed = *(double*)prop->data;
+                }
             }
         }
         //TODO handle other mpv event
@@ -146,7 +151,14 @@ void VideoInit()
     mpv_observe_property(mpv, MPV_PROPERTY_PAUSE, "pause", MPV_FORMAT_FLAG);
     mpv_observe_property(mpv, MPV_PROPERTY_PERCENTPOS, "percent-pos", MPV_FORMAT_DOUBLE);
     mpv_observe_property(mpv, MPV_PROPERTY_VOLUME, "volume", MPV_FORMAT_DOUBLE);
+    mpv_observe_property(mpv, MPV_PROPERTY_SPEED, "speed", MPV_FORMAT_DOUBLE);
 
+}
+
+void MpvFinish()
+{
+    mpv_render_context_free(mpv_gl);
+    mpv_destroy(mpv);
 }
 
 void TogglePause()
@@ -178,5 +190,10 @@ void ChangeVolume(int step)
     std::string step_str = std::to_string(step);
     const char* cmd[] = { "add", "volume", step_str.c_str(), NULL };
     mpv_command_async(mpv, 0, cmd);
+}
+
+void SetSpeed(double speed)
+{
+    mpv_set_property_async(mpv, 0, "speed", MPV_FORMAT_DOUBLE, &speed);
 }
 

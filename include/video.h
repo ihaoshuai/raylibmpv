@@ -25,6 +25,7 @@ struct VideoInfo
     int64_t width;
     int64_t height;    
     double percentPos;
+    double speed;
 };
 
 extern VideoInfo videoInfo;
@@ -32,9 +33,11 @@ extern VideoInfo videoInfo;
 void MpvInit(const char* videoPath);
 void MpvRender();
 void VideoInit();
+void MpvFinish();
 
 //video control
 void TogglePause();
 void Jump(double percent);
 void Seek(int second);
 void ChangeVolume(int step);
+void SetSpeed(double speed);

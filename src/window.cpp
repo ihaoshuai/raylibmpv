@@ -7,6 +7,7 @@
 #include "mpv/client.h"
 #include "rlgl.h"
 #include <cmath>
+#include <fmt/format.h>
 #include <spdlog/spdlog.h>
 #include <math.h>
 
@@ -112,6 +113,11 @@ void play(const char* videoPath) {
             {
                 DrawMsg(osdMsg.msg.c_str(), 10, 10, 20, 10);
             }
+            if(videoInfo.speed != 1.0)
+            {
+                std::string msg = fmt::format("Speed: {}", videoInfo.speed);
+                DrawMsg(msg.c_str(), 10, 60, 20, 10);
+            }
             double mousePercent = -1.f;
             if(DrawProgress(progressRect, videoInfo.percentPos, &mousePercent))
             {
@@ -126,8 +132,7 @@ void play(const char* videoPath) {
     if(thumbTexture.id > 0)
         UnloadTexture(thumbTexture);
     ThumbnailFinish();
-    mpv_render_context_free(mpv_gl);
-    mpv_destroy(mpv);
+    MpvFinish();
     CloseWindow();
     
 }
@@ -170,14 +175,33 @@ void HandleInput()
         ChangeVolume(5);
 
     if(IsKeyPressed(KEY_LEFT) || IsMouseButtonPressed(MOUSE_BUTTON_SIDE))
+    {
         Seek(-5);
-    if(IsKeyPressed(KEY_RIGHT) || IsMouseButtonPressed(MOUSE_BUTTON_EXTRA))
-        Seek(5);
-
+    }
+    if(IsMouseButtonPressed(MOUSE_BUTTON_EXTRA))
+    {
+        Seek(5); 
+    }
     if(IsKeyPressed(KEY_F) || IsMouseButtonDoubleClicked(MOUSE_BUTTON_LEFT))
     {
         CustomToggleFullscreen();
     }
+
+    static bool isKeyRightRepeat = false;
+    if(IsKeyPressedRepeat(KEY_RIGHT))
+    {
+        isKeyRightRepeat = true;
+        SetSpeed(3.0);
+    }else if(IsKeyReleased(KEY_RIGHT))
+    {
+        if(isKeyRightRepeat) {
+            SetSpeed(1.0);
+        }else {
+            Seek(5);
+        }
+        isKeyRightRepeat = false;
+    }
+
 
 }
 
@@ -238,5 +262,6 @@ bool IsMouseButtonDoubleClicked(int button)
     return false;
     
 }
+
 
 }

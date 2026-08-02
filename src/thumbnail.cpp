@@ -1,7 +1,6 @@
 #include "thumbnail.h"
 #include "raylib.h"
 #include "spdlog/spdlog.h"
-#include <cmath>
 
 extern "C" {
     #include <libavformat/avformat.h>
