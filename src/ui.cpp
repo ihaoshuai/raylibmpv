@@ -1,11 +1,14 @@
 #include "ui.h"
 #include "raylib.h"
+#include "thumbnail.h"
 #include <spdlog/spdlog.h>
 
-double DrawProgress(Rectangle rect, double percent)
+
+const int THUMB_WIDTH = 300;
+Texture2D thumbTexture{0};
+
+bool DrawProgress(Rectangle rect, double percent, double* mousePercentage)
 {
-
-
     Vector2 mousePos = GetMousePosition();
     if(CheckCollisionPointRec(mousePos, rect))
     {
@@ -22,13 +25,39 @@ double DrawProgress(Rectangle rect, double percent)
         Rectangle mouseRect{ mousePos.x - mouseRectWidth/2, rect.y, mouseRectWidth, rect.height};
         DrawRectangleRec(mouseRect, mouseColor);
 
+        *mousePercentage = (mousePos.x-rect.x)/rect.width;
+
+        if(isThumbnailReady)
+        {
+            Image thumbImage = GetThumbnail(*mousePercentage, THUMB_WIDTH);
+            if(thumbImage.data != nullptr)
+            {
+                if(thumbTexture.id == 0)
+                {
+                    thumbTexture = LoadTextureFromImage(thumbImage);
+                }else {
+                    UpdateTexture(thumbTexture, thumbImage.data);
+                }
+                UnloadImage(thumbImage);
+            }
+            int posX = mousePos.x - (double)thumbTexture.width/2;
+            if(posX < 0)
+                posX = 0;
+            else if(posX > rect.x + rect.width - thumbTexture.width)
+                posX = rect.x + rect.width - thumbTexture.width;
+            int posY = rect.y - thumbImage.height;
+            DrawTexture(thumbTexture, posX, posY, WHITE);
+            
+        }
+
+
         if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
         {
-            return (mousePos.x-rect.x)/rect.width;
+            return true;
         }
     }
 
-    return -1;
+    return false;
 }
 
 void DrawMsg(const char* msg, int x, int y, int fontSize, int margin)

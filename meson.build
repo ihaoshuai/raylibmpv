@@ -12,18 +12,24 @@ spdlog = dependency('spdlog')
 
 x11 = dependency('x11')
 
+avformat = dependency('libavformat')
+avcodec = dependency('libavcodec')
+avswscale = dependency('libswscale')
+avutil = dependency('libavutil')
+
 
 incl = include_directories('include')
 
 
 incls = [ incl, mpv_incl, raylib_incl ]
-deps = [ mpv, raylib, spdlog, x11 ]
+deps = [ mpv, raylib, spdlog, x11, avformat, avcodec, avswscale, avutil ]
 
 src = files(
     'src/main.cpp',
     'src/window.cpp',
     'src/video.cpp',
     'src/ui.cpp',
+    'src/thumbnail.cpp'
 )
 
 executable('cvp', src, include_directories: incls, dependencies: deps)

@@ -1,3 +1,4 @@
+#include "thumbnail.h"
 #include "ui.h"
 #include "video.h"
 #include "window.h"
@@ -42,7 +43,7 @@ void CustomToggleFullscreen();
 
 bool IsMouseButtonDoubleClicked(int button);
 
-void play(const char* video) {
+void play(const char* videoPath) {
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_HIDDEN);
     InitWindow(100, 100, "cvp");
@@ -51,12 +52,11 @@ void play(const char* video) {
 
     rlDisableBackfaceCulling();
 
-    MpvInit(video);
+    ThumbnailInit(videoPath);
+    MpvInit(videoPath);
 
     AdjustWindow();
     ClearWindowState(FLAG_WINDOW_HIDDEN);
-
-    
 
     bool isFirstFrame = true;
     lastResizeTime = 0.0;
@@ -112,15 +112,20 @@ void play(const char* video) {
             {
                 DrawMsg(osdMsg.msg.c_str(), 10, 10, 20, 10);
             }
-            double percent;
-            if((percent = DrawProgress(progressRect, videoInfo.percentPos)) >= 0)
+            double mousePercent = -1.f;
+            if(DrawProgress(progressRect, videoInfo.percentPos, &mousePercent))
             {
-                Jump(percent);
+                Jump(mousePercent);
             }
+
+
             // DrawFPS(GetScreenWidth() - 100, 10);
         EndDrawing();
     }
 
+    if(thumbTexture.id > 0)
+        UnloadTexture(thumbTexture);
+    ThumbnailFinish();
     mpv_render_context_free(mpv_gl);
     mpv_destroy(mpv);
     CloseWindow();

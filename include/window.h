@@ -1,6 +1,6 @@
 #pragma once
 
 namespace window {
-    void play(const char* video);
+    void play(const char* videoPath);
 }
 
