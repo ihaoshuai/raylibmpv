@@ -162,7 +162,7 @@ void ResizeWindowCallback()
 
 void HandleInput()
 {
-    if(IsMouseButtonPressed(MOUSE_RIGHT_BUTTON))
+    if(IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) || IsKeyReleased(KEY_SPACE))
         TogglePause();
 
     //volume control
