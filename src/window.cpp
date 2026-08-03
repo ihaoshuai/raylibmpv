@@ -62,6 +62,7 @@ void play(const char* videoPath) {
 
     while (!WindowShouldClose()) {
         double now = GetTime();
+        PollMpvEvent();
 
         if(redraw) {
             redraw = false;

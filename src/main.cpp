@@ -4,7 +4,7 @@
 
 int main(int argc, char *argv[]) {
     spdlog::set_level(spdlog::level::debug);
-
+    
     if (argc != 2) {
         spdlog::error("pass a single media file as argument\n");
         return 1;

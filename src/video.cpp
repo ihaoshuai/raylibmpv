@@ -1,4 +1,5 @@
 #include "video.h"
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -25,6 +26,8 @@ const uint64_t MPV_PROPERTY_VOLUME = 0x4;
 const uint64_t MPV_PROPERTY_SPEED = 0x8;
 const double MSG_DURATION_TIME = 1.5;
 
+std::atomic<bool> needCheckEvents{ false };
+
 static void* get_proc_address(void *ctx, const char *name) {
     return rlGetProcAddress(name);
 }
@@ -37,60 +40,7 @@ void SetMsg(const std::string& msg)
 
 void on_mpv_events(void *ctx)
 {
-    while (true) {
-        mpv_event *event = mpv_wait_event((mpv_handle*)ctx, 0);
-        if(event->event_id == MPV_EVENT_NONE)
-            break;
-        if(event->event_id == MPV_EVENT_LOG_MESSAGE)
-        {
-            mpv_event_log_message *msg = (mpv_event_log_message*)event->data;
-            if(strstr(msg->text, "DR image"))
-                spdlog::info("MPV_LOG: {}", msg->text);
-            continue;
-        }
-        if(event->event_id == MPV_EVENT_PROPERTY_CHANGE)
-        {
-            mpv_event_property *prop = (mpv_event_property*)event->data;
-            if(event->reply_userdata == MPV_PROPERTY_PAUSE)
-            {
-                if((propertyFirstSet & MPV_PROPERTY_PAUSE) == 0)
-                {
-                    propertyFirstSet = propertyFirstSet | MPV_PROPERTY_PAUSE;
-                    continue;
-                }
-                if(prop->format == MPV_FORMAT_FLAG)
-                {
-                    int isPause = *(int*)prop->data;
-                    if(isPause)
-                        SetMsg("Pause");
-                    else
-                        SetMsg("Play");
-                }
-            }else if (event->reply_userdata == MPV_PROPERTY_PERCENTPOS) {
-                if(prop->format == MPV_FORMAT_DOUBLE)
-                {
-                    videoInfo.percentPos = (*(double*)prop->data)/100;
-                }
-            }else if (event->reply_userdata == MPV_PROPERTY_VOLUME) {
-                if((propertyFirstSet & MPV_PROPERTY_VOLUME) == 0)
-                {
-                    propertyFirstSet = propertyFirstSet | MPV_PROPERTY_VOLUME;
-                    continue;
-                }
-                if(prop->format == MPV_FORMAT_DOUBLE)
-                {
-                    double vol = *(double*)prop->data;
-                    SetMsg(fmt::format("Volume: {}", vol));
-                }
-            }else if(event->reply_userdata == MPV_PROPERTY_SPEED) {
-                if(prop->format == MPV_FORMAT_DOUBLE)
-                {
-                    videoInfo.speed = *(double*)prop->data;
-                }
-            }
-        }
-        //TODO handle other mpv event
-    }
+    needCheckEvents.store(true, std::memory_order_relaxed);
 }
 
 void on_mpv_render_update(void *ctx)
@@ -211,5 +161,65 @@ void ChangeVolume(int step)
 void SetSpeed(double speed)
 {
     mpv_set_property_async(mpv, 0, "speed", MPV_FORMAT_DOUBLE, &speed);
+}
+
+void PollMpvEvent()
+{
+    if(!needCheckEvents.exchange(false))
+        return;
+    while (true) {
+        mpv_event *event = mpv_wait_event(mpv, 0);
+        if(event->event_id == MPV_EVENT_NONE)
+            break;
+        if(event->event_id == MPV_EVENT_LOG_MESSAGE)
+        {
+            mpv_event_log_message *msg = (mpv_event_log_message*)event->data;
+            if(strstr(msg->text, "DR image"))
+                spdlog::info("MPV_LOG: {}", msg->text);
+            continue;
+        }
+        if(event->event_id == MPV_EVENT_PROPERTY_CHANGE)
+        {
+            mpv_event_property *prop = (mpv_event_property*)event->data;
+            if(event->reply_userdata == MPV_PROPERTY_PAUSE)
+            {
+                if((propertyFirstSet & MPV_PROPERTY_PAUSE) == 0)
+                {
+                    propertyFirstSet = propertyFirstSet | MPV_PROPERTY_PAUSE;
+                    continue;
+                }
+                if(prop->format == MPV_FORMAT_FLAG)
+                {
+                    int isPause = *(int*)prop->data;
+                    if(isPause)
+                        SetMsg("Pause");
+                    else
+                        SetMsg("Play");
+                }
+            }else if (event->reply_userdata == MPV_PROPERTY_PERCENTPOS) {
+                if(prop->format == MPV_FORMAT_DOUBLE)
+                {
+                    videoInfo.percentPos = (*(double*)prop->data)/100;
+                }
+            }else if (event->reply_userdata == MPV_PROPERTY_VOLUME) {
+                if((propertyFirstSet & MPV_PROPERTY_VOLUME) == 0)
+                {
+                    propertyFirstSet = propertyFirstSet | MPV_PROPERTY_VOLUME;
+                    continue;
+                }
+                if(prop->format == MPV_FORMAT_DOUBLE)
+                {
+                    double vol = *(double*)prop->data;
+                    SetMsg(fmt::format("Volume: {}", vol));
+                }
+            }else if(event->reply_userdata == MPV_PROPERTY_SPEED) {
+                if(prop->format == MPV_FORMAT_DOUBLE)
+                {
+                    videoInfo.speed = *(double*)prop->data;
+                }
+            }
+        }
+        //TODO handle other mpv event
+    }
 }
 

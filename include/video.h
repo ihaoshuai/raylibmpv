@@ -41,3 +41,5 @@ void Jump(double percent);
 void Seek(int second);
 void ChangeVolume(int step);
 void SetSpeed(double speed);
+
+void PollMpvEvent();
