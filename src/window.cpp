@@ -232,6 +232,7 @@ void AdjustWindow()
             ClearWindowState(FLAG_WINDOW_TOPMOST | FLAG_WINDOW_UNDECORATED);
             SetWindowSize(screenWidth, screenHeight);
             SetWindowPosition(windowPos.x, windowPos.y);
+            ResizeWindowCallback();
             isFullscreen = false;
         }else {
             screenHeight = GetScreenHeight();
