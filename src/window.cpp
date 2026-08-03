@@ -88,15 +88,17 @@ void play(const char* videoPath) {
             }
         }
 
-        if(fullscreenHelper.frameCount < 2)
-        {
-            if(fullscreenHelper.frameCount == 1)
+        #if !defined(_WIN32)
+            if(fullscreenHelper.frameCount < 2)
             {
-                SetWindowSize(fullscreenHelper.width, fullscreenHelper.height);
-                ResizeWindowCallback();
+                if(fullscreenHelper.frameCount == 1)
+                {
+                    SetWindowSize(fullscreenHelper.width, fullscreenHelper.height);
+                    ResizeWindowCallback();
+                }
+                fullscreenHelper.frameCount++;
             }
-            fullscreenHelper.frameCount++;
-        }
+        #endif
             
 
         HandleInput();
@@ -138,6 +140,7 @@ void play(const char* videoPath) {
 
 void ResizeWindowCallback()
 {
+    // spdlog::debug("resize call");
     int renderWidth = GetRenderWidth();
     int renderHeight = GetRenderHeight();
 
@@ -217,17 +220,45 @@ void AdjustWindow()
     SetWindowPosition((MONITOR_WIDTH-screenWidth)/2, (MONITOR_HEIGHT-screenHeight)/2);
 }
 
-void CustomToggleFullscreen()
-{
-    if(IsWindowFullscreen()) {
-        ToggleFullscreen();
-        fullscreenHelper.frameCount = 0;
-    }else {
-        fullscreenHelper.width = GetScreenWidth();
-        fullscreenHelper.height = GetScreenHeight();   
-        ToggleFullscreen();
+#if defined(_WIN32)
+    void CustomToggleFullscreen()
+    {
+        static bool isFullscreen = false;
+        static int screenWidth;
+        static int screenHeight;
+        static Vector2 windowPos;
+
+        if(isFullscreen) {
+            ClearWindowState(FLAG_WINDOW_TOPMOST | FLAG_WINDOW_UNDECORATED);
+            SetWindowSize(screenWidth, screenHeight);
+            SetWindowPosition(windowPos.x, windowPos.y);
+            isFullscreen = false;
+        }else {
+            screenHeight = GetScreenHeight();
+            screenWidth = GetScreenWidth();
+            windowPos = GetWindowPosition();
+            isFullscreen = true;
+            int monitor = GetCurrentMonitor();
+            SetWindowState(FLAG_WINDOW_TOPMOST | FLAG_WINDOW_UNDECORATED);
+            SetWindowSize(GetMonitorWidth(monitor), GetMonitorHeight(monitor));
+            SetWindowPosition(0, 0);
+            ResizeWindowCallback();
+        }
     }
-}
+#else
+    void CustomToggleFullscreen()
+    {
+        if(IsWindowFullscreen()) {
+            ToggleFullscreen();
+            fullscreenHelper.frameCount = 0;
+        }else {
+            fullscreenHelper.width = GetScreenWidth();
+            fullscreenHelper.height = GetScreenHeight();   
+            ToggleFullscreen();
+        }
+    }
+#endif
+
 
 double Vector2Distance(Vector2 point, Vector2 other)
 {
