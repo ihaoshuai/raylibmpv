@@ -25,10 +25,12 @@ const uint64_t MPV_PROPERTY_PAUSE = 0x1;
 const uint64_t MPV_PROPERTY_PERCENTPOS = 0x2;
 const uint64_t MPV_PROPERTY_VOLUME = 0x4;
 const uint64_t MPV_PROPERTY_SPEED = 0x8;
+const uint64_t MPV_PROPERTY_TRACK_LIST = 0x10;
 
 std::atomic<bool> needCheckEvents{ false };
 
 std::vector<SubTrack> GetSubTracks();
+void UpdateVideoTracks(mpv_node* node);
 
 static void* get_proc_address(void *ctx, const char *name) {
     return rlGetProcAddress(name);
@@ -121,8 +123,9 @@ void VideoInit()
     mpv_observe_property(mpv, MPV_PROPERTY_PERCENTPOS, "percent-pos", MPV_FORMAT_DOUBLE);
     mpv_observe_property(mpv, MPV_PROPERTY_VOLUME, "volume", MPV_FORMAT_DOUBLE);
     mpv_observe_property(mpv, MPV_PROPERTY_SPEED, "speed", MPV_FORMAT_DOUBLE);
+    mpv_observe_property(mpv, MPV_PROPERTY_TRACK_LIST, "track-list", MPV_FORMAT_NODE);
 
-    videoInfo.subs = GetSubTracks();
+    // videoInfo.subs = GetSubTracks();
 }
 
 void MpvFinish()
@@ -131,6 +134,7 @@ void MpvFinish()
     mpv_unobserve_property(mpv, MPV_PROPERTY_PERCENTPOS);
     mpv_unobserve_property(mpv, MPV_PROPERTY_VOLUME);
     mpv_unobserve_property(mpv, MPV_PROPERTY_SPEED);
+    mpv_unobserve_property(mpv, MPV_PROPERTY_TRACK_LIST);
 
     mpv_render_context_free(mpv_gl);
     UnloadRenderTexture(mpv_tx);
@@ -227,6 +231,13 @@ void PollMpvEvent()
                 {
                     videoInfo.speed = *(double*)prop->data;
                 }
+            }else if(event->reply_userdata == MPV_PROPERTY_TRACK_LIST) {
+                if(prop->format == MPV_FORMAT_NODE)
+                {
+                    // spdlog::debug("track list change");
+                    UpdateVideoTracks((mpv_node*)prop->data);
+                    mpv_free_node_contents((mpv_node*)prop->data);
+                }
             }
         }
         //TODO handle other mpv event
@@ -280,7 +291,7 @@ std::vector<SubTrack> GetSubTracks()
                     }
                 }
             }
-        }
+        }    
     }
     mpv_free_node_contents(&node);
     return subs;
@@ -291,4 +302,61 @@ void SetSub(int64_t sid)
     mpv_set_property_async(mpv, 0, "sid", MPV_FORMAT_INT64, &sid);
 }
 
+void DisableSub()
+{
+    mpv_set_property_string(mpv, "sid", "no");
+}
 
+
+void UpdateVideoTracks(mpv_node* node)
+{
+    videoInfo.subs.clear();
+    if((*node).format == MPV_FORMAT_NODE_ARRAY)
+    {
+        mpv_node_list *list = (*node).u.list;
+        for(int i=0; i<list->num; i++)
+        {
+            if(list->values[i].format == MPV_FORMAT_NODE_MAP)
+            {
+                mpv_node_list *track = list->values[i].u.list;
+                
+                char *type = NULL;
+                int64_t id = -1;
+                char *lang = NULL;
+                char *title = NULL;
+                bool selected = false;
+
+                for(int j=0; j<track->num; j++)
+                {
+                    char* key = track->keys[j];
+                    mpv_node *val = &track->values[j];
+                    if (strcmp(key, "type") == 0 && val->format == MPV_FORMAT_STRING) {
+                        type = val->u.string;
+                    } else if (strcmp(key, "id") == 0 && val->format == MPV_FORMAT_INT64) {
+                        id = val->u.int64;
+                    } else if (strcmp(key, "lang") == 0 && val->format == MPV_FORMAT_STRING) {
+                        lang = val->u.string;
+                    } else if (strcmp(key, "title") == 0 && val->format == MPV_FORMAT_STRING) {
+                        title = val->u.string;
+                    } else if (strcmp(key, "selected") == 0 && val->format == MPV_FORMAT_FLAG) {
+                        selected = val->u.flag;
+                    }
+                }
+
+                if(type && strcmp(type, "sub") == 0)
+                {
+                    videoInfo.subs.push_back({
+                        .sid = id, .lang = lang?lang:"unknown", .title = title?title:"unknown", .is_selected = selected
+                    });
+                }
+            }
+        }
+    }
+}
+
+
+void AddSub(const char* sub_path)
+{
+    const char* cmd[] = { "sub-add", sub_path, "select", "external sub", NULL };
+    mpv_command_async(mpv, 0, cmd);
+}

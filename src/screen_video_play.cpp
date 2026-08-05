@@ -65,6 +65,17 @@ void UpdateVideoPlayScreen()
 
     PollMpvEvent();
 
+    if(IsFileDropped())
+    {
+        FilePathList drop_file = LoadDroppedFiles();
+        if(drop_file.count == 1) {
+            char* drop_file_path = drop_file.paths[0];
+            AddSub(drop_file_path);
+        }
+        UnloadDroppedFiles(drop_file);
+    }
+
+
     HandleInput();
 
 }
@@ -76,6 +87,7 @@ void DrawVideoPlayScreen()
     if(videoInfo.width > renderRect.width)
     {
         //缩小
+        // spdlog::debug("use down shader");
         int resolution_loc = GetShaderLocation(down_shader, "u_resolution");
         SetShaderValue(down_shader, resolution_loc, &resolution, SHADER_UNIFORM_VEC2);
         BeginShaderMode(down_shader);
@@ -85,6 +97,7 @@ void DrawVideoPlayScreen()
     else if(videoInfo.width < renderRect.width)
     {
         //放大        
+        // spdlog::debug("use up shader");
         int resolution_loc = GetShaderLocation(up_shader, "u_resolution");
         SetShaderValue(up_shader, resolution_loc, &resolution, SHADER_UNIFORM_VEC2);
         BeginShaderMode(up_shader);
@@ -93,6 +106,7 @@ void DrawVideoPlayScreen()
     }
     else
     {
+        // spdlog::debug("no use shader");
         DrawTexturePro(mpv_tx.texture, Rectangle{0, 0, (float)mpv_tx.texture.width, (float)mpv_tx.texture.height}, renderRect, Vector2{0, 0}, 0.f, WHITE);
     }
 
@@ -123,7 +137,10 @@ void DrawVideoPlayScreen()
         if(item_id >= 0)
         {
             is_menu_show = false;
-            SetSub(videoInfo.subs[item_id].sid);
+            if(videoInfo.subs[item_id].is_selected)
+                DisableSub();
+            else
+                SetSub(videoInfo.subs[item_id].sid);
             
         }
         return;

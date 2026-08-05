@@ -46,5 +46,7 @@ void Seek(int second);
 void ChangeVolume(int step);
 void SetSpeed(double speed);
 void SetSub(int64_t sid);
+void DisableSub();
+void AddSub(const char* sub_path);
 
 void PollMpvEvent();
