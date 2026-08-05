@@ -9,6 +9,9 @@
 #include <spdlog/spdlog.h>
 #include <vector>
 
+#include "lanczos3_fs.h"
+#include "bicubic_fs.h"
+
 bool is_first_frame;
 Rectangle renderRect = { 0, 0, 0, 0};
 Rectangle progressRect{0, 0, 0, 0};
@@ -28,6 +31,7 @@ static void ResizeWindowCallback();
 Shader down_shader;
 Shader up_shader;
 
+
 void InitVideoPlayScreen(const char* videoPath)
 {
     ThumbnailInit(videoPath);
@@ -39,11 +43,14 @@ void InitVideoPlayScreen(const char* videoPath)
     osdMsg.msg.clear();
     SetResizeWindowCallback(ResizeWindowCallback);
 
-    down_shader = LoadShader(NULL, "shader/lanczos3.fs");
-    up_shader = LoadShader(NULL, "shader/bicubic.fs");
+    // down_shader = LoadShader(NULL, "shader/lanczos3.fs");
+    // up_shader = LoadShader(NULL, "shader/bicubic.fs");
+
+    std::string lanczos3_src{(char*)shader_lanczos3_fs, shader_lanczos3_fs_len};
+    std::string bicubic_src{(char*)shader_bicubic_fs, shader_bicubic_fs_len};
     
-
-
+    down_shader = LoadShaderFromMemory(NULL, lanczos3_src.c_str());
+    up_shader = LoadShaderFromMemory(NULL, bicubic_src.c_str());
 }
 
 

@@ -234,7 +234,7 @@ void PollMpvEvent()
             }else if(event->reply_userdata == MPV_PROPERTY_TRACK_LIST) {
                 if(prop->format == MPV_FORMAT_NODE)
                 {
-                    spdlog::debug("track list change");
+                    // spdlog::debug("track list change");
                     UpdateVideoTracks((mpv_node*)prop->data);
                     mpv_free_node_contents((mpv_node*)prop->data);
                 }

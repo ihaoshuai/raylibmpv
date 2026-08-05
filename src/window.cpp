@@ -27,7 +27,7 @@ int* GenerateChineseCodepoints(int *outCount);
 
 void WindowInit()
 {
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_HIDDEN);
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_HIDDEN | FLAG_WINDOW_HIGHDPI | FLAG_VSYNC_HINT);
     InitWindow(100, 100, "cvp");
     SetTargetFPS(60);
     SetExitKey(KEY_Q);
