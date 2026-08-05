@@ -40,7 +40,10 @@ src = files(
     'src/window.cpp',
     'src/video.cpp',
     'src/ui.cpp',
-    'src/thumbnail.cpp'
+    'src/thumbnail.cpp',
+    'src/screen_idle.cpp',
+    'src/screen_video_play.cpp',
+    
 )
 
 executable('cvp', src, include_directories: incls, dependencies: deps)

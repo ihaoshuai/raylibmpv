@@ -5,19 +5,20 @@
 #include "rlgl.h"
 #include <cstdint>
 #include <string>
+#include <vector>
 
 extern mpv_handle* mpv;
 extern mpv_render_context* mpv_gl;
 extern RenderTexture mpv_tx;
 extern bool redraw;
 
-struct OsdMsg
+struct SubTrack
 {
-    std::string msg;
-    double lastShowTime;
+    int64_t sid;
+    std::string lang;
+    std::string title;
+    bool is_selected;
 };
-
-extern OsdMsg osdMsg;
 
 struct VideoInfo
 {
@@ -26,11 +27,14 @@ struct VideoInfo
     int64_t height;    
     double percentPos;
     double speed;
+    std::vector<SubTrack> subs;
 };
 
 extern VideoInfo videoInfo;
 
-void MpvInit(const char* videoPath);
+
+void MpvInit();
+void LoadVideo(const char* videoPath);
 void MpvRender();
 void VideoInit();
 void MpvFinish();
@@ -41,5 +45,6 @@ void Jump(double percent);
 void Seek(int second);
 void ChangeVolume(int step);
 void SetSpeed(double speed);
+void SetSub(int64_t sid);
 
 void PollMpvEvent();

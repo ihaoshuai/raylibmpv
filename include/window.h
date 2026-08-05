@@ -1,6 +1,10 @@
 #pragma once
 
-namespace window {
-    void play(const char* videoPath);
-}
 
+
+void WindowInit();
+void WindowFinish();
+void CustomToggleFullscreen();
+bool IsMouseButtonDoubleClicked(int button);
+void SetResizeWindowCallback(void (*callback)(void));
+void HandleResizeWindow();

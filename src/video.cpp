@@ -7,16 +7,17 @@
 #include <fmt/format.h>
 #include <spdlog/spdlog.h>
 #include <string>
+#include <vector>
 #include "mpv/client.h"
 #include "mpv/render_gl.h"
 #include "raylib.h"
+#include "ui.h"
 
 mpv_handle* mpv;
 mpv_render_context* mpv_gl;
 RenderTexture mpv_tx;
 bool redraw;
 VideoInfo videoInfo{.speed = 1.0};
-OsdMsg osdMsg;
 
 uint64_t propertyFirstSet = 0x0;
 
@@ -24,19 +25,15 @@ const uint64_t MPV_PROPERTY_PAUSE = 0x1;
 const uint64_t MPV_PROPERTY_PERCENTPOS = 0x2;
 const uint64_t MPV_PROPERTY_VOLUME = 0x4;
 const uint64_t MPV_PROPERTY_SPEED = 0x8;
-const double MSG_DURATION_TIME = 1.5;
 
 std::atomic<bool> needCheckEvents{ false };
+
+std::vector<SubTrack> GetSubTracks();
 
 static void* get_proc_address(void *ctx, const char *name) {
     return rlGetProcAddress(name);
 }
 
-void SetMsg(const std::string& msg)
-{
-    osdMsg.msg = msg;
-    osdMsg.lastShowTime = GetTime() + MSG_DURATION_TIME;
-}
 
 void on_mpv_events(void *ctx)
 {
@@ -70,11 +67,13 @@ void MpvRender()
         {(mpv_render_param_type)0}
     };
     BeginTextureMode(mpv_tx);
-        mpv_render_context_render(mpv_gl, params); 
+        mpv_render_context_render(mpv_gl, params);
+        // GenTextureMipmaps(&mpv_tx.texture);
+        // SetTextureFilter(mpv_tx.texture, TEXTURE_FILTER_TRILINEAR);
         rlEnableColorBlend();
     EndTextureMode();
 } 
-void MpvInit(const char* videoPath)
+void MpvInit()
 {
     mpv = mpv_create();
     if(!mpv)
@@ -101,9 +100,14 @@ void MpvInit(const char* videoPath)
     mpv_set_wakeup_callback(mpv, on_mpv_events, mpv);
     mpv_render_context_set_update_callback(mpv_gl, on_mpv_render_update, NULL);
 
+
+}
+
+void LoadVideo(const char *videoPath)
+{
     const char* cmd[] = { "loadfile", videoPath, NULL};
     mpv_command_async(mpv, 0, cmd);
-
+    propertyFirstSet = 0x0;
 }
 
 void VideoInit()
@@ -118,12 +122,18 @@ void VideoInit()
     mpv_observe_property(mpv, MPV_PROPERTY_VOLUME, "volume", MPV_FORMAT_DOUBLE);
     mpv_observe_property(mpv, MPV_PROPERTY_SPEED, "speed", MPV_FORMAT_DOUBLE);
 
-    propertyFirstSet = 0x0;
+    videoInfo.subs = GetSubTracks();
 }
 
 void MpvFinish()
 {
+    mpv_unobserve_property(mpv, MPV_PROPERTY_PAUSE);
+    mpv_unobserve_property(mpv, MPV_PROPERTY_PERCENTPOS);
+    mpv_unobserve_property(mpv, MPV_PROPERTY_VOLUME);
+    mpv_unobserve_property(mpv, MPV_PROPERTY_SPEED);
+
     mpv_render_context_free(mpv_gl);
+    UnloadRenderTexture(mpv_tx);
     mpv_destroy(mpv);
 }
 
@@ -222,4 +232,63 @@ void PollMpvEvent()
         //TODO handle other mpv event
     }
 }
+
+
+std::vector<SubTrack> GetSubTracks()
+{
+    std::vector<SubTrack> subs;
+    mpv_node node;
+    if((mpv_get_property(mpv, "track-list", MPV_FORMAT_NODE, &node)) >= 0) 
+    {
+        if(node.format == MPV_FORMAT_NODE_ARRAY)
+        {
+            mpv_node_list *list = node.u.list;
+            for(int i=0; i<list->num; i++)
+            {
+                if(list->values[i].format == MPV_FORMAT_NODE_MAP)
+                {
+                    mpv_node_list *track = list->values[i].u.list;
+                    
+                    char *type = NULL;
+                    int64_t id = -1;
+                    char *lang = NULL;
+                    char *title = NULL;
+                    bool selected = false;
+
+                    for(int j=0; j<track->num; j++)
+                    {
+                        char* key = track->keys[j];
+                        mpv_node *val = &track->values[j];
+                        if (strcmp(key, "type") == 0 && val->format == MPV_FORMAT_STRING) {
+                            type = val->u.string;
+                        } else if (strcmp(key, "id") == 0 && val->format == MPV_FORMAT_INT64) {
+                            id = val->u.int64;
+                        } else if (strcmp(key, "lang") == 0 && val->format == MPV_FORMAT_STRING) {
+                            lang = val->u.string;
+                        } else if (strcmp(key, "title") == 0 && val->format == MPV_FORMAT_STRING) {
+                            title = val->u.string;
+                        } else if (strcmp(key, "selected") == 0 && val->format == MPV_FORMAT_FLAG) {
+                            selected = val->u.flag;
+                        }
+                    }
+
+                    if(type && strcmp(type, "sub") == 0)
+                    {
+                        subs.push_back({
+                            .sid = id, .lang = lang?lang:"unknown", .title = title?title:"unknown", .is_selected = selected
+                        });
+                    }
+                }
+            }
+        }
+    }
+    mpv_free_node_contents(&node);
+    return subs;
+}
+
+void SetSub(int64_t sid)
+{
+    mpv_set_property_async(mpv, 0, "sid", MPV_FORMAT_INT64, &sid);
+}
+
 

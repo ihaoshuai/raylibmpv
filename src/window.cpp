@@ -1,33 +1,7 @@
-#include "thumbnail.h"
-#include "ui.h"
-#include "video.h"
 #include "window.h"
 #include "raylib.h"
 #include "rlgl.h"
 #include <cmath>
-#include <fmt/format.h>
-#include <spdlog/spdlog.h>
-#include <math.h>
-
-
-
-namespace window 
-{
-
-Rectangle renderRect = { 0, 0, 0, 0};
-
-const float progressHeight = 50;
-Rectangle progressRect = { 0, 0, 0, 0};
-
-//debouce when window size change
-const double RESIZE_INTERVAL = 0.1;
-double lastResizeTime = 0.0;
-
-
-void ResizeWindowCallback();
-void HandleInput();
-void AdjustWindow();
-
 
 // raylib ToggleFullScreen has a bug, when you exit fullscreen, the height of the window will change
 // maybe wayland env cause it: 
@@ -38,172 +12,31 @@ struct FullscreenHelper{
     int frameCount;
 };
 FullscreenHelper fullscreenHelper{0, 0, 2};
-void CustomToggleFullscreen();
 
-bool IsMouseButtonDoubleClicked(int button);
+//debouce when window size change
+const double RESIZE_INTERVAL = 0.1;
+double lastResizeTime = 0.0;
 
-void play(const char* videoPath) {
 
+void (*resize_window_callback)(void) = NULL;
+
+
+void AdjustWindow();
+int* GenerateChineseCodepoints(int *outCount);
+
+
+void WindowInit()
+{
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_HIDDEN);
     InitWindow(100, 100, "cvp");
     SetTargetFPS(60);
     SetExitKey(KEY_Q);
 
     rlDisableBackfaceCulling();
-
-    ThumbnailInit(videoPath);
-    MpvInit(videoPath);
-
     AdjustWindow();
+
+
     ClearWindowState(FLAG_WINDOW_HIDDEN);
-
-    bool isFirstFrame = true;
-    lastResizeTime = 0.0;
-
-    while (!WindowShouldClose()) {
-        double now = GetTime();
-        PollMpvEvent();
-
-        if(redraw) {
-            redraw = false;
-            if(isFirstFrame)
-            {
-                isFirstFrame = false;
-                VideoInit();
-                mpv_tx = LoadRenderTexture(videoInfo.width, videoInfo.height);
-                SetWindowTitle(videoInfo.title);
-                ResizeWindowCallback();
-                lastResizeTime = GetTime();
-            }
-            MpvRender();
-        }
-
-
-        if(IsWindowResized())
-        {
-            if(now - lastResizeTime > RESIZE_INTERVAL)
-            {
-                ResizeWindowCallback();
-                lastResizeTime = now;
-            }
-        }
-
-        #if !defined(_WIN32)
-            if(fullscreenHelper.frameCount < 2)
-            {
-                if(fullscreenHelper.frameCount == 1)
-                {
-                    SetWindowSize(fullscreenHelper.width, fullscreenHelper.height);
-                    ResizeWindowCallback();
-                }
-                fullscreenHelper.frameCount++;
-            }
-        #endif
-            
-
-        HandleInput();
-
-
-        BeginDrawing();
-            ClearBackground(BLACK);
-            
-
-            DrawTexturePro(mpv_tx.texture, Rectangle{0, 0, (float)mpv_tx.texture.width, (float)mpv_tx.texture.height}, renderRect, Vector2{0, 0}, 0.f, WHITE);
-
-            if(now < osdMsg.lastShowTime && !osdMsg.msg.empty())
-            {
-                DrawMsg(osdMsg.msg.c_str(), 10, 10, 20, 10);
-            }
-            if(videoInfo.speed != 1.0)
-            {
-                std::string msg = fmt::format("Speed: {}", videoInfo.speed);
-                DrawMsg(msg.c_str(), 10, 60, 20, 10);
-            }
-            double mousePercent = -1.f;
-            if(DrawProgress(progressRect, videoInfo.percentPos, &mousePercent))
-            {
-                Jump(mousePercent);
-            }
-
-
-            // DrawFPS(GetScreenWidth() - 100, 10);
-        EndDrawing();
-    }
-
-    if(thumbTexture.id > 0)
-        UnloadTexture(thumbTexture);
-    ThumbnailFinish();
-    MpvFinish();
-    CloseWindow();
-    
-}
-
-void ResizeWindowCallback()
-{
-    // spdlog::debug("resize call");
-    int renderWidth = GetRenderWidth();
-    int renderHeight = GetRenderHeight();
-
-    float videoRatio = ((float)videoInfo.width)/(float)videoInfo.height;
-    float renderRatio = ((float)renderWidth)/(float)renderHeight;
-
-    //consider the type of render size, decide video render area
-    if(renderRatio > videoRatio)
-    {
-        renderRect.height = renderHeight;
-        renderRect.width = mpv_tx.texture.width * (((float)renderHeight)/mpv_tx.texture.height);
-        renderRect.x = (renderWidth - renderRect.width)/2;
-        renderRect.y  = 0;
-    } else {
-        renderRect.height = mpv_tx.texture.height * (((float)renderWidth)/mpv_tx.texture.width);
-        renderRect.width = renderWidth;
-        renderRect.x = 0;
-        renderRect.y = (renderHeight - renderRect.height)/2;
-    }
-
-    progressRect = { 0, renderHeight-progressHeight, (float)renderWidth, progressHeight};
-}
-
-void HandleInput()
-{
-    if(IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) || IsKeyReleased(KEY_SPACE))
-        TogglePause();
-
-    //volume control
-    Vector2 mouseWheelMove = GetMouseWheelMoveV();
-    if(IsKeyPressed(KEY_DOWN) || mouseWheelMove.y < 0)
-        ChangeVolume(-5);
-    if(IsKeyPressed(KEY_UP) || mouseWheelMove.y > 0)
-        ChangeVolume(5);
-
-    if(IsKeyPressed(KEY_LEFT) || IsMouseButtonPressed(MOUSE_BUTTON_SIDE))
-    {
-        Seek(-5);
-    }
-    if(IsMouseButtonPressed(MOUSE_BUTTON_EXTRA))
-    {
-        Seek(5); 
-    }
-    if(IsKeyPressed(KEY_F) || IsMouseButtonDoubleClicked(MOUSE_BUTTON_LEFT))
-    {
-        CustomToggleFullscreen();
-    }
-
-    static bool isKeyRightRepeat = false;
-    if(IsKeyPressedRepeat(KEY_RIGHT))
-    {
-        isKeyRightRepeat = true;
-        SetSpeed(3.0);
-    }else if(IsKeyReleased(KEY_RIGHT))
-    {
-        if(isKeyRightRepeat) {
-            SetSpeed(1.0);
-        }else {
-            Seek(5);
-        }
-        isKeyRightRepeat = false;
-    }
-
 
 }
 
@@ -294,5 +127,71 @@ bool IsMouseButtonDoubleClicked(int button)
     
 }
 
+void SetResizeWindowCallback(void (*callback)(void))
+{
+    resize_window_callback = callback;
+}
+
+
+void HandleResizeWindow()
+{
+    double now = GetTime();
+    if(IsWindowResized())
+    {
+        if(now - lastResizeTime > RESIZE_INTERVAL)
+        {
+            if(resize_window_callback)
+                resize_window_callback();
+            lastResizeTime = now;
+        }
+    }
+
+    #if !defined(_WIN32)
+        if(fullscreenHelper.frameCount < 2)
+        {
+            if(fullscreenHelper.frameCount == 1)
+            {
+                SetWindowSize(fullscreenHelper.width, fullscreenHelper.height);
+                if(resize_window_callback)
+                    resize_window_callback();
+            }
+            fullscreenHelper.frameCount++;
+        }
+    #endif
 
 }
+
+
+int* GenerateChineseCodepoints(int *outCount) {
+    // 1. 定义需要包含的字符区间
+    // ASCII 范围: 32 - 126
+    int asciiCount = 126 - 32 + 1;
+    // CJK 统一表意文字基本区 (常用汉字主要集中在此范围: 0x4E00 - 0x9FA5, 共 20902 字)
+    // 为了性能和显存，可以加载常用范围，或选取前 N 个高频字范围
+    int cjkStart = 0x4E00;
+    int cjkEnd = 0x9FA5; 
+    int cjkCount = cjkEnd - cjkStart + 1;
+
+    int totalCount = asciiCount + cjkCount;
+    int *codepoints = (int *)RL_MALLOC(totalCount * sizeof(int));
+
+    int index = 0;
+    // 填充 ASCII
+    for (int i = 32; i <= 126; i++) {
+        codepoints[index++] = i;
+    }
+    // 填充 CJK 汉字
+    for (int i = cjkStart; i <= cjkEnd; i++) {
+        codepoints[index++] = i;
+    }
+
+    *outCount = totalCount;
+    return codepoints;
+}
+
+
+void WindowFinish()
+{
+    CloseWindow();
+}
+
