@@ -1,6 +1,8 @@
 #include "raylib.h"
 #include "screen.h"
 #include "ui.h"
+#include "window.h"
+#include <cstddef>
 #include <spdlog/spdlog.h>
 
 std::string drop_file_path;
@@ -10,6 +12,7 @@ void InitIdleScreen()
 {
     drop_file_path.clear();
     osdMsg.msg.clear();
+    SetResizeWindowCallback(NULL);
 }
 
 void UpdateIdleScreen()

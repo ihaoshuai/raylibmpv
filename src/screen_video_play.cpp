@@ -145,7 +145,7 @@ void DrawVideoPlayScreen()
         }
         return;
     }
-    bool should_show_btns = videoInfo.subs.size()>1;
+    bool should_show_btns = videoInfo.subs.size()>0;
     if((should_show_btns && CheckCollisionPointRec(mousePos, menuRect)) || CheckCollisionPointRec(mousePos, progressRect))
     {
         if(DrawProgress(progressRect, videoInfo.percentPos, &mousePercent))
@@ -154,7 +154,7 @@ void DrawVideoPlayScreen()
         }
 
         if(!CheckCollisionPointRec(mousePos, progressRect)) {
-            if(videoInfo.subs.size() > 1)
+            if(videoInfo.subs.size() > 0)
             {
                 if(DrawButton(Rectangle{10, menuRect.y+5, 50, 50}, "sub"))
                 {
