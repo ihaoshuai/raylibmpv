@@ -26,6 +26,7 @@ const float MENU_HEIGHT = 60;
 bool is_menu_show;
 
 void HandleInput();
+void HandleMouseVisibility();
 static void ResizeWindowCallback();
 
 Shader down_shader;
@@ -84,6 +85,8 @@ void UpdateVideoPlayScreen()
 
 
     HandleInput();
+
+    HandleMouseVisibility();
 
 }
 
@@ -282,3 +285,21 @@ static void ResizeWindowCallback()
 
 }
 
+void HandleMouseVisibility()
+{
+    static double last_mouse_move_time = 0.0;
+    const double hide_delay = 0.75;
+    
+    Vector2 mouse_delta = GetMouseDelta();
+    if(mouse_delta.x != 0 && mouse_delta.y != 0)
+    {
+        last_mouse_move_time = GetTime();
+        if(IsCursorHidden())
+            ShowCursor();
+    }else if (GetTime() - last_mouse_move_time > hide_delay) {
+        if(!IsCursorHidden())
+            HideCursor();
+    }
+
+    
+}
