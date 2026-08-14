@@ -65,7 +65,8 @@ void AdjustWindow()
             ClearWindowState(FLAG_WINDOW_TOPMOST | FLAG_WINDOW_UNDECORATED);
             SetWindowSize(screenWidth, screenHeight);
             SetWindowPosition(windowPos.x, windowPos.y);
-            ResizeWindowCallback();
+           if(resize_window_callback)
+                resize_window_callback();
             isFullscreen = false;
         }else {
             screenHeight = GetScreenHeight();
@@ -76,7 +77,8 @@ void AdjustWindow()
             SetWindowState(FLAG_WINDOW_TOPMOST | FLAG_WINDOW_UNDECORATED);
             SetWindowSize(GetMonitorWidth(monitor), GetMonitorHeight(monitor));
             SetWindowPosition(0, 0);
-            ResizeWindowCallback();
+            if(resize_window_callback)
+                resize_window_callback();
         }
     }
 #else
