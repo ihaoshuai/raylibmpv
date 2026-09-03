@@ -26,7 +26,8 @@ bool DrawProgress(Rectangle rect, double percent, double* mousePercentage)
     if(CheckCollisionPointRec(mousePos, rect))
     {
         float mouseRectWidth = 6;
-        Color mouseColor{210, 168, 255, 255};
+        // Color mouseColor{210, 168, 255, 255};
+        Color mouseColor{80, 62, 112, 255};
         Rectangle mouseRect{ mousePos.x - mouseRectWidth/2, rect.y, mouseRectWidth, rect.height};
         DrawRectangleRec(mouseRect, mouseColor);
         *mousePercentage = (mousePos.x-rect.x)/rect.width;

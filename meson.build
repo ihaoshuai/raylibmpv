@@ -46,4 +46,15 @@ src = files(
     
 )
 
-executable('cvp', src, include_directories: incls, dependencies: deps)
+extra_args = []
+if get_option('buildtype') == 'release'
+    extra_args += [ '-DRELEASE_BUILD' ]
+endif
+
+executable(
+    'cvp', 
+    src, 
+    cpp_args: extra_args,
+    include_directories: incls, 
+    dependencies: deps
+)

@@ -27,8 +27,19 @@ int* GenerateChineseCodepoints(int *outCount);
 
 void WindowInit()
 {
+    #if defined(RELEASE_BUILD)
+        ChangeDirectory(GetApplicationDirectory());
+    #endif
+
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_HIDDEN | FLAG_WINDOW_HIGHDPI | FLAG_VSYNC_HINT);
     InitWindow(100, 100, "cvp");
+
+    Image icon = LoadImage("icon.PNG");
+    ImageResize(&icon, 64, 64);
+    SetWindowIcon(icon);
+    UnloadImage(icon);
+
+
     SetTargetFPS(60);
     SetExitKey(KEY_Q);
 

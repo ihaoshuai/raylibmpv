@@ -85,6 +85,7 @@ void MpvInit()
     }
     mpv_set_option_string(mpv, "vo", "libmpv");
     mpv_set_option_string(mpv, "hwdec", "auto");
+    // mpv_set_option_string(mpv, "sub-auto", "fuzzy");
     // mpv_set_option_string(mpv, "msg-level", "all=v");
     // mpv_set_option_string(mpv, "terminal", "yes");
     mpv_initialize(mpv);
