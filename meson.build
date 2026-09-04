@@ -59,6 +59,7 @@ if current_system == 'linux'
         'cvp',
         src, 
         cpp_args: extra_args, 
+        link_args: link_args,
         include_directories: incls, 
         dependencies: deps, 
     )
