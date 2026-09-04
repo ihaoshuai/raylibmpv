@@ -1,3 +1,13 @@
+#if defined(_WIN32)           
+    #include "windows_need.h"
+    #include <dwmapi.h>
+
+    #ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
+    #define DWMWA_USE_IMMERSIVE_DARK_MODE 20
+    #endif
+#endif
+
+
 #include "window.h"
 #include "raylib.h"
 #include "rlgl.h"
@@ -36,6 +46,12 @@ void WindowInit()
     
     
     InitWindow(100, 100, "cvp");
+
+    #if defined(_WIN32)
+        HWND hwnd = (HWND)GetWindowHandle();
+        BOOL darkMode = TRUE;
+        DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &darkMode, sizeof(darkMode));
+    #endif
 
     Image icon = LoadImage("icon.PNG");
     ImageResize(&icon, 64, 64);
