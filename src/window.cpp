@@ -1,3 +1,13 @@
+#if defined(_WIN32)           
+    #include "windows_need.h"
+    #include <dwmapi.h>
+
+    #ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
+    #define DWMWA_USE_IMMERSIVE_DARK_MODE 20
+    #endif
+#endif
+
+
 #include "window.h"
 #include "raylib.h"
 #include "rlgl.h"
@@ -29,6 +39,14 @@ void WindowInit()
 {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_HIDDEN | FLAG_WINDOW_HIGHDPI | FLAG_VSYNC_HINT);
     InitWindow(100, 100, "cvp");
+
+    #if defined(_WIN32)
+        HWND hwnd = (HWND)GetWindowHandle();
+        BOOL darkMode = TRUE;
+        DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &darkMode, sizeof(darkMode));
+    #endif
+
+
     SetTargetFPS(60);
     SetExitKey(KEY_Q);
 

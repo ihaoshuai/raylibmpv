@@ -1,8 +1,24 @@
+
+
+
 #include "raylib.h"
 #include "screen.h"
 #include "window.h"
 #include "spdlog/spdlog.h"
 #include <spdlog/common.h>
+
+
+// it did not work
+// Disable the console in Windows releases
+// # if defined(WIN32) && !defined(_DEBUG)
+// #pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
+// #endif
+
+// it did not work
+// #if defined(WIN32) && defined(_MSC_VER) && defined(RELEASE_BUILD)
+// #if defined(RELEASE_BUILD)
+// #pragma comment(linker, "/entry:mainCRTStartup")
+// #endif
 
 ScreenType currentScreen;
 void UpdateScreen();

@@ -32,7 +32,8 @@ elif current_system == 'windows'
     winim = cppc.find_library('winmm')
     winopengl = cppc.find_library('opengl32')
     gdi32 = cppc.find_library('gdi32')
-    deps += [winim, winopengl, gdi32]
+    dwmapi_dep = cppc.find_library('dwmapi', required: false)
+    deps += [winim, winopengl, gdi32, dwmapi_dep]
 endif
 
 src = files(
@@ -46,4 +47,26 @@ src = files(
     
 )
 
-executable('cvp', src, include_directories: incls, dependencies: deps)
+extra_args = []
+if get_option('buildtype') == 'release'
+    extra_args += [ '-DRELEASE_BUILD' ]
+endif
+
+if current_system == 'linux' 
+    executable(
+        'cvp',
+        src, 
+        cpp_args: extra_args, 
+        include_directories: incls, 
+        dependencies: deps, 
+    )
+elif current_system == 'windows'
+    executable(
+        'cvp', 
+        src, 
+        cpp_args: extra_args, 
+        include_directories: incls, 
+        dependencies: deps, 
+        win_subsystem : 'windows'
+    )
+endif
