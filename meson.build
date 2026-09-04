@@ -47,8 +47,10 @@ src = files(
 )
 
 extra_args = []
+link_args =  []
 if get_option('buildtype') == 'release'
     extra_args += [ '-DRELEASE_BUILD' ]
+    link_args += ['-Wl,-rpath,$ORIGIN/lib']
 endif
 
 executable(
