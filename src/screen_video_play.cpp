@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <fmt/format.h>
 #include <spdlog/spdlog.h>
+#include <string>
 #include <vector>
 
 #include "lanczos3_fs.h"
@@ -214,6 +215,54 @@ int FinishVideoPlayScreen()
     return 0;
 }
 
+void LogKeyStatus(int button, const std::string& key_name)
+{
+    if(IsKeyPressed(button))
+    {
+        spdlog::debug("{} pressed", key_name);
+    }else if(IsKeyPressedRepeat(button))
+    {
+        spdlog::debug("{} repeat", key_name);
+    }else if(IsKeyReleased(button))
+    {
+        spdlog::debug("{} realeased", key_name);
+    }else if(IsKeyDown(button))
+    {
+        spdlog::debug("{} down", key_name);
+    }else if(IsKeyUp(button))
+    {
+        spdlog::debug("{} up", key_name);
+    }
+}
+
+enum class KeyStatus
+{
+    None = 0, Press, Repeat, RepeatRelease, PressRelease
+};
+
+void GetKeyStatus(int button, KeyStatus& last_status, double& last_press_time)
+{
+    const double repeat_interval = 0.6;
+    auto now = GetTime();
+        spdlog::debug("last status: {}", static_cast<int>(last_status));
+    if(IsKeyPressed(button))
+    {
+        last_status = KeyStatus::Press;
+        last_press_time = now;
+    } else if(IsKeyDown(button))
+    {
+        if(now - last_press_time > repeat_interval)
+            last_status = KeyStatus::Repeat;
+    } else if (IsKeyUp(button)) {
+        if(last_status == KeyStatus::Repeat)
+            last_status = KeyStatus::RepeatRelease;
+        else if(last_status == KeyStatus::Press)
+            last_status = KeyStatus::PressRelease;
+        else
+            last_status = KeyStatus::None;
+    }
+
+}
 
 void HandleInput()
 {
@@ -240,20 +289,35 @@ void HandleInput()
         CustomToggleFullscreen();
     }
 
-    static bool isKeyRightRepeat = false;
-    if(IsKeyPressedRepeat(KEY_RIGHT))
-    {
-        isKeyRightRepeat = true;
-        SetSpeed(3.0);
-    }else if(IsKeyReleased(KEY_RIGHT))
-    {
-        if(isKeyRightRepeat) {
-            SetSpeed(1.0);
-        }else {
-            Seek(5);
-        }
-        isKeyRightRepeat = false;
-    }
+    // static bool isKeyRightRepeat = false;
+    // // LogKeyStatus(KEY_RIGHT, "right key");
+    // if(IsKeyPressedRepeat(KEY_RIGHT))
+    // {
+    //     isKeyRightRepeat = true;
+    //     SetSpeed(3.0);
+    // }else if(IsKeyReleased(KEY_RIGHT))
+    // {
+    //     if(isKeyRightRepeat) {
+    //         SetSpeed(1.0);
+    //     }else {
+    //         Seek(5);
+    //     }
+    //     isKeyRightRepeat = false;
+    // }
+
+    static KeyStatus status = KeyStatus::None;
+    static double last_press_time = 0;
+    GetKeyStatus(KEY_RIGHT, status, last_press_time);
+    const double faster_speed = 3.0;
+    // spdlog::debug("key status: {}", static_cast<int>(status));
+    if(status == KeyStatus::Repeat && videoInfo.speed != faster_speed)
+        SetSpeed(faster_speed);
+    else if(status == KeyStatus::RepeatRelease)
+        SetSpeed(1.0);
+    else if (status == KeyStatus::PressRelease)
+        Seek(5);
+
+
 
 }
 
