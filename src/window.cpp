@@ -1,3 +1,4 @@
+#include "glfw3.h"
 #if defined(_WIN32)           
     #include "windows_need.h"
     #include <dwmapi.h>
@@ -179,13 +180,19 @@ void HandleResizeWindow()
     }
 
     #if !defined(_WIN32)
-        if(fullscreenHelper.frameCount < 2)
+        if(fullscreenHelper.frameCount <= 2)
         {
             if(fullscreenHelper.frameCount == 1)
             {
                 SetWindowSize(fullscreenHelper.width, fullscreenHelper.height);
                 if(resize_window_callback)
                     resize_window_callback();
+                SetWindowState(FLAG_WINDOW_TOPMOST);
+            }else if(fullscreenHelper.frameCount == 2)
+            {
+                ClearWindowState(FLAG_WINDOW_TOPMOST);
+                if(!IsWindowFocused())
+                    SetWindowFocused();
             }
             fullscreenHelper.frameCount++;
         }

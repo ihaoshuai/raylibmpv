@@ -244,7 +244,7 @@ void GetKeyStatus(int button, KeyStatus& last_status, double& last_press_time)
 {
     const double repeat_interval = 0.6;
     auto now = GetTime();
-        spdlog::debug("last status: {}", static_cast<int>(last_status));
+    // spdlog::debug("last status: {}", static_cast<int>(last_status));
     if(IsKeyPressed(button))
     {
         last_status = KeyStatus::Press;
