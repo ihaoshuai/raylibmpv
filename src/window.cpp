@@ -1,4 +1,3 @@
-#include "glfw3.h"
 #if defined(_WIN32)           
     #include "windows_need.h"
     #include <dwmapi.h>
