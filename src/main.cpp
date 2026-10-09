@@ -7,6 +7,10 @@
 #include "spdlog/spdlog.h"
 #include <spdlog/common.h>
 
+#if defined(__linux__)
+    #include <stdlib.h>
+#endif
+
 
 // it did not work
 // Disable the console in Windows releases
@@ -33,6 +37,13 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    #if defined (__linux__)
+        setenv("GTK_IM_MODULE", "none", 1);
+        setenv("QT_IM_MODULE", "none", 1);
+        setenv("XMODIFIERS", "@im=none", 1);
+    #endif
+
+    
     WindowInit();
     
     if(argc == 1)
